@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Circuitos Eléctricos — Simulación Interactiva</title>
+    <script src="js/i18n-en.js"></script>
+    <script src="js/i18n-ca.js"></script>
+    <script src="js/i18n-eu.js"></script>
+    <script src="js/i18n-gl.js"></script>
+    <script src="js/i18n.js"></script>
+    <script src="js/vendor/p5.min.js"></script>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <script src="js/estadisticas.js" data-sim="sim-circuitos"></script>
+</head>
+<body class="mode-ohm">
+    <div class="app-container">
+
+        <!-- ── PANEL DE CONTROL ──────────────────────────────────── -->
+        <aside class="control-panel">
+
+            <header>
+                <div class="header-top">
+                    <svg class="header-icon-svg" width="42" height="42" viewBox="0 0 42 42" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                        <!-- Marco -->
+                        <rect x="3" y="5" width="36" height="32" rx="3.5" stroke="#585858" stroke-width="1.8" fill="#0d0d0d"/>
+                        <!-- Cables -->
+                        <path d="M10 17 V11 H32 V31 H10 V24" stroke="#9aa8b8" stroke-width="1.8" fill="none" stroke-linejoin="round"/>
+                        <!-- Pila -->
+                        <line x1="6" y1="17" x2="14" y2="17" stroke="#e0e8f0" stroke-width="1.8" stroke-linecap="round"/>
+                        <line x1="8" y1="21" x2="12" y2="21" stroke="#e0e8f0" stroke-width="3" stroke-linecap="round"/>
+                        <!-- Bombilla encendida -->
+                        <circle cx="32" cy="21" r="5" fill="#facc15" stroke="#fff3b0" stroke-width="1"/>
+                        <!-- Electrones -->
+                        <circle cx="20" cy="11" r="1.6" fill="#38bdf8"/>
+                        <circle cx="21" cy="31" r="1.6" fill="#38bdf8"/>
+                    </svg>
+                    <h1>Circuitos Eléctricos</h1>
+                </div>
+                <p class="subtitle">Ley de Ohm, Serie y Paralelo</p>
+                <details class="header-details">
+                    <summary>Descripción y reglas rápidas</summary>
+                    <div class="header-details-body">
+                        <p class="section-note" data-i18n="nota-descripcion">
+                            Monta un circuito con una pila, un interruptor y bombillas o resistencias.
+                            Mide la tensión y la intensidad, comprueba la ley de Ohm y compara qué
+                            ocurre al conectar los receptores en serie o en paralelo.
+                        </p>
+                        <div class="quick-rule">
+                            <span class="qr-ohm" data-i18n="regla-ohm">Ley de Ohm → V = I · R</span>
+                            <span class="qr-serie" data-i18n="regla-serie">Serie → misma I; V = V<sub>1</sub> + V<sub>2</sub> + …</span>
+                            <span class="qr-par" data-i18n="regla-paralelo">Paralelo → misma V; I = I<sub>1</sub> + I<sub>2</sub> + …</span>
+                        </div>
+                    </div>
+                </details>
+            </header>
+
+            <hr class="divider">
+
+            <!-- SELECTOR DE MODO -->
+            <div class="mode-switch" role="tablist">
+                <button id="mode-ohm" type="button" class="mode-btn active">
+                    Ley de Ohm
+                    <span class="mode-sub">un receptor</span>
+                </button>
+                <button id="mode-serie" type="button" class="mode-btn">
+                    Serie
+                    <span class="mode-sub">uno tras otro</span>
+                </button>
+                <button id="mode-paralelo" type="button" class="mode-btn">
+                    Paralelo
+                    <span class="mode-sub">en ramas</span>
+                </button>
+            </div>
+
+            <!-- PILA E INTERRUPTOR -->
+            <section class="control-group">
+                <h2>Generador</h2>
+
+                <div class="input-wrapper">
+                    <div class="label-container">
+                        <label for="slider-v">Tensión de la pila</label>
+                        <span id="val-v" class="value-badge">6,0 V</span>
+                    </div>
+                    <input type="range" id="slider-v" min="0" max="12" value="6" step="0.5">
+                    <div class="slider-bounds"><span>0 V</span><span>12 V</span></div>
+                </div>
+
+                <label class="switch-row" for="switch-toggle">
+                    <span>Interruptor <span id="switch-state" class="label-hint">(cerrado)</span></span>
+                    <span class="switch">
+                        <input type="checkbox" id="switch-toggle" checked>
+                        <span class="switch-track"></span>
+                    </span>
+                </label>
+            </section>
+
+            <hr class="divider">
+
+            <!-- RECEPTORES -->
+            <section class="control-group">
+                <h2>Receptores</h2>
+
+                <div class="input-wrapper">
+                    <label for="receptor-type">Tipo de receptor</label>
+                    <select id="receptor-type" class="custom-select">
+                        <option value="bombilla" selected>Bombillas</option>
+                        <option value="resistencia">Resistencias</option>
+                    </select>
+                </div>
+
+                <!-- Ley de Ohm: un solo receptor -->
+                <div class="input-wrapper only-ohm">
+                    <div class="label-container">
+                        <label for="slider-r">Resistencia (R)</label>
+                        <span id="val-r" class="value-badge">20 Ω</span>
+                    </div>
+                    <input type="range" id="slider-r" min="5" max="100" value="20" step="5">
+                    <div class="slider-bounds"><span>5 Ω</span><span>100 Ω</span></div>
+                </div>
+
+                <!-- Serie y paralelo: dos o tres receptores -->
+                <div class="input-wrapper only-assoc">
+                    <span class="label-container"><label id="lbl-count">Número de receptores</label></span>
+                    <div class="seg-group" role="group" aria-labelledby="lbl-count">
+                        <button type="button" class="seg-btn count-btn" data-count="2">2</button>
+                        <button type="button" class="seg-btn count-btn active" data-count="3">3</button>
+                    </div>
+                </div>
+
+                <div class="input-wrapper only-assoc">
+                    <div class="label-container">
+                        <label for="slider-r1">Resistencia R<sub>1</sub></label>
+                        <span id="val-r1" class="value-badge">10 Ω</span>
+                    </div>
+                    <input type="range" id="slider-r1" min="5" max="100" value="10" step="5">
+                </div>
+
+                <div class="input-wrapper only-assoc">
+                    <div class="label-container">
+                        <label for="slider-r2">Resistencia R<sub>2</sub></label>
+                        <span id="val-r2" class="value-badge">20 Ω</span>
+                    </div>
+                    <input type="range" id="slider-r2" min="5" max="100" value="20" step="5">
+                </div>
+
+                <div id="wrap-r3" class="input-wrapper only-assoc">
+                    <div class="label-container">
+                        <label for="slider-r3">Resistencia R<sub>3</sub></label>
+                        <span id="val-r3" class="value-badge">30 Ω</span>
+                    </div>
+                    <input type="range" id="slider-r3" min="5" max="100" value="30" step="5">
+                    <div class="slider-bounds"><span>5 Ω</span><span>100 Ω</span></div>
+                </div>
+
+                <div class="input-wrapper only-assoc">
+                    <span class="label-container"><label id="lbl-present">Receptores conectados</label></span>
+                    <div class="seg-group seg-3" role="group" aria-labelledby="lbl-present">
+                        <button type="button" class="seg-btn present-btn" data-index="0" aria-pressed="true">R₁</button>
+                        <button type="button" class="seg-btn present-btn" data-index="1" aria-pressed="true">R₂</button>
+                        <button type="button" class="seg-btn present-btn" data-index="2" aria-pressed="true">R₃</button>
+                    </div>
+                </div>
+                <p class="field-hint only-assoc" data-i18n="ayuda-quitar">Pulsa un receptor (aquí o en el circuito) para quitarlo y volver a ponerlo. También puedes pulsar el interruptor del circuito.</p>
+
+                <!-- Ley de Ohm: tabla de medidas -->
+                <div class="btn-row only-ohm">
+                    <button id="btn-record" type="button" class="ctrl-btn primary">＋ Anotar medida</button>
+                    <button id="btn-clear" type="button" class="ctrl-btn">Borrar medidas</button>
+                </div>
+                <p class="field-hint only-ohm" data-i18n="ayuda-anotar">Cambia la tensión de la pila y anota cada medida: los puntos de la gráfica I–V quedan en una recta que pasa por el origen. También puedes pulsar el interruptor del circuito.</p>
+            </section>
+
+            <hr class="divider">
+
+            <!-- MEDIDAS (plegable) -->
+            <details class="custom-details" open>
+                <summary>Medidas del circuito</summary>
+                <div class="details-content metrics-content">
+
+                    <div class="metrics-grid">
+                        <div class="card card-data">
+                            <h3><span class="dot c-v"></span>Tensión</h3>
+                            <div class="metric">
+                                <span id="metric-v" class="c-v">6,0</span>
+                                <small>V</small>
+                            </div>
+                        </div>
+                        <div class="card card-data">
+                            <h3><span class="dot c-i"></span><span class="only-ohm">Intensidad</span><span class="only-assoc">I total</span></h3>
+                            <div class="metric">
+                                <span id="metric-i" class="c-i">0,300</span>
+                                <small>A</small>
+                            </div>
+                        </div>
+                        <div class="card card-data">
+                            <h3><span class="dot c-r"></span><span class="only-ohm">Resistencia</span><span class="only-assoc">R equivalente</span></h3>
+                            <div class="metric">
+                                <span id="metric-r" class="c-r">20</span>
+                                <small>Ω</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card card-estado">
+                        <p class="table-title">Receptores</p>
+                        <table class="data-table">
+                            <thead>
+                                <tr><th>Receptor</th><th>R (Ω)</th><th>V (V)</th><th>I (A)</th><th>P (W)</th></tr>
+                            </thead>
+                            <tbody id="elem-table"></tbody>
+                        </table>
+                        <p id="circuit-note" class="table-note">—</p>
+                    </div>
+
+                    <div class="card card-estado only-ohm">
+                        <p class="table-title">Tabla de medidas</p>
+                        <table class="data-table">
+                            <thead>
+                                <tr><th>N.º</th><th>R (Ω)</th><th>V (V)</th><th>I (A)</th><th>V / I (Ω)</th></tr>
+                            </thead>
+                            <tbody id="meas-table"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </details>
+
+            <!-- FÓRMULAS -->
+            <details class="custom-details">
+                <summary>Fórmulas esenciales</summary>
+                <div class="details-content">
+                    <div class="card edu-card">
+                        <div class="formula-list">
+                            <div class="formula">
+                                <span class="formula-name">Intensidad:</span>
+                                <span class="formula-eq">I = q / t</span>
+                            </div>
+                            <div class="formula">
+                                <span class="formula-name">Ley de Ohm:</span>
+                                <span class="formula-eq">V = I · R</span>
+                            </div>
+                            <div class="formula">
+                                <span class="formula-name">Despejando:</span>
+                                <span class="formula-eq">I = V / R ; R = V / I</span>
+                            </div>
+                            <div class="formula">
+                                <span class="formula-name">Potencia:</span>
+                                <span class="formula-eq">P = V · I</span>
+                            </div>
+                            <div class="formula">
+                                <span class="formula-name">Serie:</span>
+                                <span class="formula-eq">R<sub>eq</sub> = R<sub>1</sub> + R<sub>2</sub> + R<sub>3</sub></span>
+                            </div>
+                            <div class="formula">
+                                <span class="formula-name">Serie:</span>
+                                <span class="formula-eq">V = V<sub>1</sub> + V<sub>2</sub> + V<sub>3</sub></span>
+                            </div>
+                            <div class="formula">
+                                <span class="formula-name">Paralelo:</span>
+                                <span class="formula-eq">1/R<sub>eq</sub> = 1/R<sub>1</sub> + 1/R<sub>2</sub> + 1/R<sub>3</sub></span>
+                            </div>
+                            <div class="formula">
+                                <span class="formula-name">Paralelo:</span>
+                                <span class="formula-eq">I = I<sub>1</sub> + I<sub>2</sub> + I<sub>3</sub></span>
+                            </div>
+                            <div class="formula">
+                                <span class="formula-name">Unidades:</span>
+                                <span class="formula-eq" data-i18n="formula-unidades">V en voltios, I en amperios, R en ohmios (Ω), P en vatios (W)</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </details>
+
+        </aside>
+
+        <!-- ── PANEL DE SIMULACIÓN ───────────────────────────────── -->
+        <main class="simulation-panel">
+            <button id="electron-toggle" type="button" class="canvas-toggle-btn"
+                    aria-pressed="true"
+                    title="Mostrar / ocultar los electrones">
+                Electrones
+            </button>
+
+            <!-- Botón de tema -->
+            <button id="theme-btn" class="theme-btn" title="Cambiar tema" aria-label="Cambiar tema" aria-expanded="false">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                    <path d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.07-0.94l2.03-1.58
+                    c0.18-0.14,0.23-0.41,0.12-0.61l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96
+                    c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41h-3.84
+                    c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33
+                    c-0.22-0.08-0.47,0-0.59,0.22L2.74,8.87C2.62,9.08,2.66,9.34,2.86,9.48l2.03,1.58
+                    C4.84,11.36,4.8,11.69,4.8,12s0.02,0.64,0.07,0.94l-2.03,1.58c-0.18,0.14-0.23,0.41-0.12,0.61
+                    l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94
+                    l0.36,2.54c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.44-0.17,0.47-0.41l0.36-2.54
+                    c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32
+                    c0.12-0.22,0.07-0.47-0.12-0.61L19.14,12.94z
+                    M12,15.6c-1.98,0-3.6-1.62-3.6-3.6s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z"/>
+                </svg>
+            </button>
+            <div id="theme-panel" class="theme-panel" aria-hidden="true">
+                <p class="theme-panel-title">Tema visual</p>
+                <div class="theme-options">
+                    <button class="theme-opt active" data-theme="dark">
+                        <span class="theme-swatch dark-swatch"></span>Oscuro
+                    </button>
+                    <button class="theme-opt" data-theme="light">
+                        <span class="theme-swatch light-swatch"></span>Claro
+                    </button>
+                    <button class="theme-opt" data-theme="contrast">
+                        <span class="theme-swatch contrast-swatch"></span>Alto contraste
+                    </button>
+                </div>
+            </div>
+
+            <div id="canvas-container"></div>
+        </main>
+
+    </div>
+    <script src="js/circuit.js"></script>
+    <script src="js/sketch.js"></script>
+</body>
+</html>
