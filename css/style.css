@@ -350,6 +350,7 @@ input[type="range"]:disabled { cursor: not-allowed; }
     color: #e8e8e8;
     font-family: monospace;
     line-height: 1.1;
+    white-space: nowrap;
 }
 
 .metric small {
@@ -860,6 +861,8 @@ body.theme-contrast .qr-par     { color: #ff88ff; background: #1a001a; border-co
 @media (max-width: 500px) {
     .card { padding: 9px 8px; }
     .metric { font-size: 1.08rem; }
+    .data-table { font-size: 0.70rem; }
+    .data-table th, .data-table td { padding: 3px 2px; }
 }
 
 /* ════════════════════════════════════════════════════

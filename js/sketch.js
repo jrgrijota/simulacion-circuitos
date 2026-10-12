@@ -681,13 +681,13 @@ function drawCurrentArrows(lay) {
 }
 
 function drawLegend() {
-    const x = SCENE.x + SCENE.w - 340, y = SCENE.y + SCENE.h - 34;
+    const x = SCENE.x + SCENE.w - 270, y = SCENE.y + SCENE.h - 34;
     noStroke();
     textSize(10);
     textAlign(LEFT, CENTER);
     arrowHead(x + 6, y, 0, THEME.arrow);
     fill(THEME.textFaint);
-    text(i18n.t('sentido de la corriente (de + a − por fuera de la pila)'), x + 20, y);
+    text(i18n.t('sentido de la corriente (de + a −)'), x + 20, y);
     if (showElectrons) {
         fill(THEME.electron);
         circle(x + 6, y + 18, 9);
@@ -700,6 +700,278 @@ function drawLegend() {
 //  PANEL INFERIOR
 // ═══════════════════════════════════════════════════════════════════
 function drawBottomPanel() {
+    if (circuit.mode === 'ohm') {
+        drawIVGraph({ x: LOWER.x, y: LOWER.y, w: 640, h: LOWER.h });
+        drawOhmBox({ x: LOWER.x + 656, y: LOWER.y, w: LOWER.w - 656, h: LOWER.h });
+    } else {
+        const w = (LOWER.w - 16) / 2;
+        drawBarChart({ x: LOWER.x, y: LOWER.y, w, h: LOWER.h }, 'V');
+        drawBarChart({ x: LOWER.x + w + 16, y: LOWER.y, w, h: LOWER.h }, 'I');
+    }
+}
+
+function drawPanelBox(P, title) {
+    fill(THEME.panelBg);
+    stroke(THEME.panelBorder);
+    strokeWeight(1);
+    rect(P.x, P.y, P.w, P.h, 8);
+    noStroke();
+    fill(THEME.textDim);
+    textSize(11);
+    textStyle(BOLD);
+    textAlign(LEFT, TOP);
+    text(title, P.x + 14, P.y + 10);
+    textStyle(NORMAL);
+}
+
+// Primer valor «redondo» (1, 2, 2,5 o 5 por una potencia de 10) mayor o igual que x.
+function niceCeil(x) {
+    const p = Math.pow(10, Math.floor(Math.log10(x)));
+    for (const m of [1, 2, 2.5, 5, 10]) if (m * p >= x - 1e-9) return m * p;
+    return 10 * p;
+}
+
+// ── Gráfica I–V del modo ley de Ohm ──
+function drawIVGraph(G) {
+    drawPanelBox(G, i18n.t('GRÁFICA INTENSIDAD – TENSIÓN'));
+
+    // Una recta por cada resistencia medida, más la del receptor actual
+    const Rlist = [];
+    measurements.forEach(m => { if (!Rlist.includes(m.R)) Rlist.push(m.R); });
+    if (!Rlist.includes(circuit.R)) Rlist.push(circuit.R);
+    const colorOf = (R) => THEME.series[Rlist.indexOf(R) % THEME.series.length];
+
+    const L = G.x + 62, R = G.x + G.w - 18, T = G.y + 36, B = G.y + G.h - 32;
+    const Imax = niceCeil(Math.max(V_MAX / circuit.R, ...measurements.map(m => m.I), 0.01));
+    const X = (v) => map(v, 0, V_MAX, L, R);
+    const Y = (i) => map(i, 0, Imax, B, T);
+
+    // Rejilla y ejes
+    textSize(9.5);
+    for (let v = 0; v <= V_MAX; v += 2) {
+        stroke(THEME.grid);
+        strokeWeight(1);
+        line(X(v), T, X(v), B);
+        noStroke();
+        fill(THEME.textFaint);
+        textAlign(CENTER, TOP);
+        text(fmt(v, 0), X(v), B + 5);
+    }
+    const step = Imax / 5;
+    const dI = step < 0.1 ? 3 : step < 1 ? 2 : 1;
+    for (let k = 0; k <= 5; k++) {
+        const i = k * step;
+        stroke(THEME.grid);
+        line(L, Y(i), R, Y(i));
+        noStroke();
+        fill(THEME.textFaint);
+        textAlign(RIGHT, CENTER);
+        text(fmt(i, dI), L - 6, Y(i));
+    }
+    textAlign(RIGHT, TOP);
+    text(i18n.t('V (V)'), R, B + 17);
+    textAlign(LEFT, TOP);
+    text(i18n.t('I (A)'), L + 6, T + 3);
+
+    // Rectas I = V / R
+    Rlist.forEach(Rv => {
+        const c = colorOf(Rv);
+        stroke(c);
+        strokeWeight(Rv === circuit.R ? 2.2 : 1.4);
+        if (Rv === circuit.R) drawingContext.setLineDash([6, 5]);
+        const vEnd = Math.min(V_MAX, Imax * Rv);
+        line(X(0), Y(0), X(vEnd), Y(vEnd / Rv));
+        drawingContext.setLineDash([]);
+    });
+
+    // Medidas anotadas
+    measurements.forEach(m => {
+        stroke(THEME.panelBg);
+        strokeWeight(1.5);
+        fill(colorOf(m.R));
+        circle(X(m.V), Y(m.I), 10);
+    });
+
+    // Punto de funcionamiento actual
+    const e = sol.elems[0];
+    stroke(THEME.textFaint);
+    strokeWeight(1);
+    drawingContext.setLineDash([3, 4]);
+    line(X(e.V), Y(e.I), X(e.V), B);
+    line(X(e.V), Y(e.I), L, Y(e.I));
+    drawingContext.setLineDash([]);
+    noFill();
+    stroke(THEME.text);
+    strokeWeight(2);
+    circle(X(e.V), Y(e.I), 15);
+
+    // Leyenda
+    textSize(10.5);
+    let lx = R - Rlist.length * 92;
+    Rlist.forEach(Rv => {
+        stroke(colorOf(Rv));
+        strokeWeight(3);
+        line(lx, G.y + 17, lx + 16, G.y + 17);
+        noStroke();
+        fill(colorOf(Rv));
+        textAlign(LEFT, CENTER);
+        text(`R = ${fmtR(Rv)} Ω`, lx + 21, G.y + 17);
+        lx += 92;
+    });
+}
+
+// ── Cálculo con la ley de Ohm ──
+function drawOhmBox(P) {
+    drawPanelBox(P, i18n.t('LEY DE OHM'));
+    const e = sol.elems[0];
+    const x = P.x + 18;
+    let y = P.y + 38;
+
+    noStroke();
+    fill(THEME.text);
+    textSize(22);
+    textStyle(BOLD);
+    textAlign(LEFT, TOP);
+    text('I = V / R', x, y);
+    textStyle(NORMAL);
+    y += 40;
+
+    textSize(13);
+    fill(THEME.i);
+    text(`I = ${fmtV(e.V)} V / ${fmtR(e.R)} Ω = ${fmtI(e.I)} A`, x, y);
+    y += 24;
+    fill(THEME.p);
+    text(`P = V · I = ${fmtP(e.P)} W`, x, y);
+    y += 24;
+    fill(THEME.r);
+    text(i18n.t('pendiente = 1 / R = {s} A/V', { s: fmt(1 / e.R, 3) }), x, y);
+
+    y += 32;
+    fill(THEME.textFaint);
+    textSize(10.5);
+    text(i18n.t('Más tensión → más intensidad (proporcionales).'), x, y, P.w - 30);
+    text(i18n.t('Más resistencia → menos intensidad.'), x, y + 16, P.w - 30);
+}
+
+// ── Diagramas de barras de tensiones e intensidades (serie y paralelo) ──
+function drawBarChart(P, kind) {
+    const isV = kind === 'V';
+    const col = isV ? THEME.v : THEME.i;
+    drawPanelBox(P, i18n.t(isV ? 'TENSIONES (V)' : 'INTENSIDADES (A)'));
+
+    const elems = sol.elems;
+    const total = isV ? sol.V : sol.I;
+    const vmax = isV ? V_MAX : niceCeil(Math.max(total, 0.05));
+    const L = P.x + 56, R = P.x + P.w - 16, T = P.y + 40, B = P.y + P.h - 34;
+    const Y = (v) => map(v, 0, vmax, B, T);
+
+    // Rejilla
+    textSize(9.5);
+    const nTicks = isV ? 6 : 5;
+    const dec = isV ? 0 : (vmax / nTicks < 0.1 ? 2 : vmax / nTicks < 1 ? 1 : 0);
+    for (let k = 0; k <= nTicks; k++) {
+        const v = vmax * k / nTicks;
+        stroke(THEME.grid);
+        strokeWeight(1);
+        line(L, Y(v), R, Y(v));
+        noStroke();
+        fill(THEME.textFaint);
+        textAlign(RIGHT, CENTER);
+        text(fmt(v, dec), L - 6, Y(v));
+    }
+
+    // Barras: una por receptor y la total (apilada cuando es una suma)
+    const stacked = (isV && circuit.mode === 'serie') || (!isV && circuit.mode === 'paralelo');
+    const nb = elems.length + 1;
+    const slot = (R - L) / nb, bw = Math.min(56, slot * 0.55);
+
+    // Un receptor quitado no conduce (I = 0), pero entre sus bornes puede haber tensión.
+    const val = (e) => (isV ? e.V : e.I) || 0;
+    const ghost = color(col);
+    ghost.setAlpha(90);
+
+    elems.forEach((e, k) => {
+        const cx = L + slot * (k + 0.5);
+        const v = val(e);
+        noStroke();
+        fill(e.present ? col : ghost);
+        if (v > 0) rect(cx - bw / 2, Y(v), bw, B - Y(v), 3, 3, 0, 0);
+        fill(THEME.textDim);
+        textSize(12);
+        textStyle(BOLD);
+        textAlign(CENTER, TOP);
+        text(`${kind}${SUB[k]}`, cx, B + 6);
+        textStyle(NORMAL);
+        textSize(10);
+        textAlign(CENTER, BASELINE);
+        fill(col);
+        if (e.present || v > 0) text(isV ? fmtV(v) : fmtI(v), cx, Y(v) - 5);
+        if (!e.present) {
+            fill(THEME.textFaint);
+            text(i18n.t('quitada'), cx, Y(v) - (v > 0 ? 18 : 5));
+        }
+    });
+
+    // Barra total: apilada cuando es la suma de las de los receptores
+    const cx = L + slot * (nb - 0.5);
+    const sum = elems.reduce((acc, e) => acc + val(e), 0);
+    if (stacked && sum > 0 && Math.abs(sum - total) < 1e-6) {
+        let acc = 0;
+        elems.forEach((e, k) => {
+            const v = val(e);
+            if (v <= 0) return;
+            const y0 = Y(acc), y1 = Y(acc + v);
+            fill(e.present ? col : ghost);
+            stroke(THEME.panelBg);
+            strokeWeight(2);
+            rect(cx - bw / 2, y1, bw, y0 - y1);
+            if (y0 - y1 > 15) {
+                noStroke();
+                fill(THEME.panelBg);
+                textSize(10.5);
+                textStyle(BOLD);
+                textAlign(CENTER, CENTER);
+                text(`${kind}${SUB[k]}`, cx, (y0 + y1) / 2);
+                textStyle(NORMAL);
+            }
+            acc += v;
+        });
+    } else if (total > 0) {
+        noStroke();
+        fill(col);
+        rect(cx - bw / 2, Y(total), bw, B - Y(total), 3, 3, 0, 0);
+    }
+    noStroke();
+    fill(THEME.text);
+    textSize(12);
+    textStyle(BOLD);
+    textAlign(CENTER, TOP);
+    text(i18n.t(isV ? 'pila' : 'total'), cx, B + 6);
+    textStyle(NORMAL);
+    textSize(10);
+    fill(col);
+    textAlign(CENTER, BASELINE);
+    text(isV ? fmtV(total) : fmtI(total), cx, Y(total) - 5);
+
+    // Línea del valor total
+    stroke(THEME.textFaint);
+    strokeWeight(1);
+    drawingContext.setLineDash([4, 4]);
+    line(L, Y(total), R, Y(total));
+    drawingContext.setLineDash([]);
+
+    // Regla que se cumple
+    const rule = {
+        'serie-V':    'V = V₁ + V₂ + V₃',
+        'serie-I':    'I = I₁ = I₂ = I₃',
+        'paralelo-V': 'V = V₁ = V₂ = V₃',
+        'paralelo-I': 'I = I₁ + I₂ + I₃',
+    }[circuit.mode + '-' + kind];
+    noStroke();
+    fill(THEME.textDim);
+    textSize(11);
+    textAlign(RIGHT, TOP);
+    text(circuit.n === 2 ? rule.replace(/ [+=] [VI]₃/, '') : rule, R, P.y + 10);
 }
 
 // ═══════════════════════════════════════════════════════════════════
