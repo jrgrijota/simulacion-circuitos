@@ -39,47 +39,8 @@ Abre `index.html` en un navegador (con `?lang=en`, la interfaz se muestra en ing
 | `css/style.css` | Estilos y temas |
 | `js/circuit.js` | Resolución del circuito: ley de Ohm, serie y paralelo, con interruptor y receptores quitados |
 | `js/sketch.js` | Dibujo del circuito, de los electrones, de la gráfica I–V y de las barras; controles |
-| `js/i18n.js`, `js/i18n-*.js` | Traducciones de la interfaz |
+| `js/i18n.js`, `js/i18n-en.js`, `js/i18n-ca.js`, `js/i18n-eu.js`, `js/i18n-gl.js` | Idioma de la interfaz (`?lang=en`, `?lang=ca`, `?lang=eu`, `?lang=gl`) y traducciones al inglés, al catalán, al euskera y al gallego |
 | `js/estadisticas.js` | Recuento anónimo de visitas (GoatCounter, sin cookies) |
-| `guias/circuitos.md` | Guía docente, lista para copiarse en `guias/` del portal |
-
-## Alta en SimulaCiencia
-
-Para publicarla en el portal hay que copiar `guias/circuitos.md` en `guias/` del
-repositorio `simulaciencia` y añadir esta entrada a `src/data/simulations.js`:
-
-```js
-  {
-    id: 'sim-circuitos',
-    title: 'Circuitos Eléctricos',
-    description:
-      'Pila, interruptor y bombillas o resistencias: mide tensión e intensidad, comprueba la ley de Ohm y compara los receptores en serie y en paralelo.',
-    tags: ['Física', 'ESO'],
-    url: 'https://jrgrijota.github.io/simulacion-circuitos/',
-    responsive: true,
-    courses: ['2ESO', '3ESO'],
-    en: {
-      title: 'Electric Circuits',
-      description:
-        "Battery, switch and bulbs or resistors: measure voltage and current, check Ohm's law and compare components in series and in parallel.",
-    },
-    ca: {
-      title: 'Circuits Elèctrics',
-      description:
-        "Pila, interruptor i bombetes o resistències: mesura tensió i intensitat, comprova la llei d'Ohm i compara els receptors en sèrie i en paral·lel.",
-    },
-    eu: {
-      title: 'Zirkuitu elektrikoak',
-      description:
-        'Pila, etengailua eta bonbillak edo erresistentziak: neurtu tentsioa eta intentsitatea, egiaztatu Ohm-en legea eta konparatu hartzaileak seriean eta paraleloan.',
-    },
-    gl: {
-      title: 'Circuítos eléctricos',
-      description:
-        'Pila, interruptor e lámpadas ou resistencias: mide tensión e intensidade, comproba a lei de Ohm e compara os receptores en serie e en paralelo.',
-    },
-  },
-```
 
 ## Licencia
 
