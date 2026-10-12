@@ -107,9 +107,9 @@ window.I18N_CA = {
     'total': 'total',
 
     // ── Tema ──
-    'Cambiar tema': 'Canviar tema',
+    'Cambiar tema': 'Canvia el tema',
     'Tema visual': 'Tema visual',
     'Oscuro': 'Fosc',
     'Claro': 'Clar',
-    'Alto contraste': 'Alt contrast',
+    'Alto contraste': 'Contrast alt',
 };
