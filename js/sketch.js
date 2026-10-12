@@ -629,7 +629,7 @@ function drawDisplay(x, y, value, col, caption) {
 
 function drawAmmeter(a) {
     drawMeter(a.x, a.y, 'A');
-    drawDisplay(a.x, a.y - 58, `${fmtI(sol.I)} A`, THEME.i, i18n.t('amperímetro'));
+    drawDisplay(a.x, a.y + 72, `${fmtI(sol.I)} A`, THEME.i, i18n.t('amperímetro'));
 }
 
 const VM_DY = 135;   // distancia del voltímetro por debajo del receptor
