@@ -96,6 +96,25 @@ function setup() {
 
     setupThemePanel();
     readControls();
+
+    // Simulación ya preparada desde la dirección (js/parametros.js),
+    // p. ej. ?modo=serie&receptores=3&r1=10&r2=20&r3=30 o ?modo=paralelo&quitar=2
+    aplicarParametrosUrl({
+        modo:        (v) => { if (['ohm', 'serie', 'paralelo'].includes(v)) setMode(v); },
+        voltaje:     urlParam.range('slider-v'),
+        interruptor: (v) => setSwitch(!['abierto', '0', 'no'].includes(v)),
+        receptor:    (v) => urlParam.select('receptor-type')({ bombillas: 'bombilla', resistencias: 'resistencia' }[v] || v),
+        r:           urlParam.range('slider-r'),
+        receptores:  (v) => { const b = document.querySelector(`.count-btn[data-count="${v}"]`); if (b) b.click(); },
+        r1:          urlParam.range('slider-r1'),
+        r2:          urlParam.range('slider-r2'),
+        r3:          urlParam.range('slider-r3'),
+        quitar:      (v) => v.split(',').forEach(k => {           // receptores desconectados: 1, 2 o 3
+            const i = parseInt(k, 10) - 1;
+            if (circuit.present[i]) toggleReceptor(i);
+        }),
+        electrones:  urlParam.toggle('electron-toggle', (el) => el.getAttribute('aria-pressed') === 'true'),
+    });
 }
 
 function setupThemePanel() {
